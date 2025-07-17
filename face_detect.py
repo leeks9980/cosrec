@@ -568,7 +568,7 @@ def interpret_score_simple(score, score_type):
 # 5. 테스트 실행
 if __name__ == "__main__":
     # 기본 테스트 이미지 경로
-    image_path = r"C:\Users\user\Desktop\Github\cosrec\KakaoTalk_20250715_141326156.jpg"
+    image_path = r"C:\Users\user\Desktop\Github\cosrec\boy_face.png"
     
     # 이미지 파일 존재 여부 확인
     import os
