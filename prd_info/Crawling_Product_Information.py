@@ -8,10 +8,11 @@ import pandas as pd
 import mango.prd_info.Crawling_Product_Information_Preparation as CPI
 import os
 
+os.chdir(r'C:\Users\leeks\my_git\mango\prd_info\url')  #Parts that need to be fixed/ Location of url file
+
 files = os.listdir('url')
 
 prd_dict = {}
-os.chdir(r'C:\Users\leeks\my_git\url')
 for i in files:
     Temporary_list = []
     read_csv = pd.read_csv(i)
@@ -36,5 +37,5 @@ for k,v in Category_dict.items():
         df.loc[len(df)] = info
 
 df2 = pd.DataFrame(b)
-df.to_csv('C:/Users/leeks/OneDrive/바탕 화면/csv/Product_Information.csv', index=False)
-df2.to_csv('C:/Users/leeks/OneDrive/바탕 화면/csv/Ingredients_list.csv', index=False)
+df.to_csv('C:/Users/leeks/OneDrive/바탕 화면/csv/Product_Information.csv', index=False)  #Parts that need to be fixed/ Save Path
+df2.to_csv('C:/Users/leeks/OneDrive/바탕 화면/csv/Ingredients_list.csv', index=False)  #Parts that need to be fixed/ Save Path
