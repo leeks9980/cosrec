@@ -39,9 +39,9 @@ product_url = "https://www.oliveyoung.co.kr/store/goods/getGoodsDetail.do?goodsN
 html = fetch_full_html(product_url)
 info = parse_product_info(html)
 
-print(" ìƒí’ˆ ìƒì„¸ ì •ë³´:")
+print(" »óÇ° »ó¼¼ Á¤º¸:")
 for key, value in info.items():
     print(f"{key} : {value}")
 
 
-print("\nğŸ“„ ì €ì¥ ì™„ë£Œ: product_info.txt")
+print("\n ÀúÀå¿Ï·á: product_info.txt")

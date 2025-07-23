@@ -1,0 +1,25 @@
+# requirements.txt for AI Skin Analysis System
+
+# 컴퓨터 비전 라이브러리
+opencv-python==4.8.1.78
+mediapipe==0.10.14
+
+# 기본 라이브러리
+numpy==1.24.3
+pillow==10.0.1
+
+# Google AI Studio
+google-generativeai==0.8.3
+
+# 유틸리티
+python-dotenv==1.0.0
+
+# 이미지 처리 추가 라이브러리
+scikit-image==0.22.0
+matplotlib==3.7.2
+
+# 프로그레스 바 (선택사항)
+tqdm==4.66.1
+
+# 로깅 (선택사항)
+loguru==0.7.2
