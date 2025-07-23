@@ -1,64 +1,82 @@
-# captioning ÈÄ ¼ººĞ ¼³¸í DB »ı¼º
-from transformers import AutoTokenizer, AutoModelForCausalLM, pipeline
+# -*- coding: utf-8 -*-
+
+import google.generativeai as genai
 import pandas as pd
-import time
 import sqlite3
+import time
+import os
 
-# ¸ğµ¨ ·Îµå
-model_id = "beomi/KoAlpaca-Polyglot-12.8B"
-tokenizer = AutoTokenizer.from_pretrained(model_id)
-model = AutoModelForCausalLM.from_pretrained(model_id, device_map="auto", torch_dtype="auto")
-pipe = pipeline("text-generation", model=model, tokenizer=tokenizer)
+# 0. Gemini API í‚¤ ì„¤ì •
+os.environ["GOOGLE_API_KEY"] = "AIzaSyBUZ1IrgpVvYYNeZGgYIs9JCOX3Zyf4AO8"
+genai.configure(api_key=os.environ["GOOGLE_API_KEY"])
 
-# ¼ººĞ ¸®½ºÆ® ¿¹½Ã
-ingredient_list = [
-    "³ªÀÌ¾Æ½Å¾Æ¸¶ÀÌµå",
-    "»ì¸®½Ç»ê",
-    "È÷¾Ë·ç·Ğ»ê",
-    "¼¾ÅÚ¶ó¾Æ½Ã¾ÆÆ¼Ä«",
-    "·¹Æ¼³î"
+# 1. CSV ë¶ˆëŸ¬ì˜¤ê¸° ë° ì„±ë¶„ ë¦¬ìŠ¤íŠ¸ ì¶”ì¶œ
+csv_path = r"C:\Users\user\Desktop\Github\cosrec\output1.csv"
+df = pd.read_csv(csv_path)
+
+ingredient_set = set()
+for col in df.columns[3:]:  # ì²« ì—´ì€ ì œí’ˆëª…ìœ¼ë¡œ ê°€ì •
+    ingredient_set.update(df[col].dropna().astype(str).tolist())
+
+ingredient_list = sorted(ingredient_set)
+
+# 2. Gemini ëª¨ë¸ ì´ˆê¸°í™”
+model = genai.GenerativeModel('gemini-2.0-flash')
+
+# 3. í•„ìˆ˜ í•­ëª© ë¦¬ìŠ¤íŠ¸ (í˜•ì‹ ê²€ì¦ìš©)
+required_fields = [
+    "íš¨ê³¼:", "ë¶€ì‘ìš©:", "ì£¼ì˜ì‚¬í•­:", "ì í•©í•œ í”¼ë¶€ íƒ€ì…:",
+    "ê¶Œì¥ ë†ë„:", "í•¨ê»˜ ì‚¬ìš©í•˜ë©´ ì•ˆ ë˜ëŠ” ì„±ë¶„:", "í¬í•¨ëœ ëŒ€í‘œ ì œí’ˆ:", "ì‚¬ìš© ì‹œê¸°/ê³„ì ˆ:"
 ]
 
-# Ä¸¼Ç »ı¼º ÇÔ¼ö
+# 4. ì„¤ëª… ìƒì„± í•¨ìˆ˜ (í”„ë¡¬í”„íŠ¸ ê°•í™” + Gemini API í™œìš©)
 def generate_description(ingredient):
-    prompt = f"""
-´ç½ÅÀº ÇÇºÎ ¼ººĞ ºĞ¼® Àü¹®°¡ÀÔ´Ï´Ù.
-´ÙÀ½ ¼ººĞ¿¡ ´ëÇØ ¼³¸íÇØÁÖ¼¼¿ä: {ingredient}
+    prompt = (
+        f"ë‹¹ì‹ ì€ í”¼ë¶€ ì„±ë¶„ ë¶„ì„ ì „ë¬¸ê°€ì…ë‹ˆë‹¤.\n\n"
+        f"ë‹¤ìŒ ì„±ë¶„ì— ëŒ€í•œ ì •ë³´ë¥¼ ì•„ë˜ ì–‘ì‹ì— ë§ì¶° ì •í™•í•˜ê³  ê°„ê²°í•˜ê²Œ ì‘ì„±í•´ì£¼ì„¸ìš”.\n\n"
+        f"ì„±ë¶„: {ingredient}\n\n"
+        f"[ì¶œë ¥ ì–‘ì‹]\n"
+        f"- íš¨ê³¼:\n"
+        f"- ë¶€ì‘ìš©:\n"
+        f"- ì£¼ì˜ì‚¬í•­:\n"
+        f"- ì í•©í•œ í”¼ë¶€ íƒ€ì…:\n"
+        f"- ê¶Œì¥ ë†ë„:\n"
+        f"- í•¨ê»˜ ì‚¬ìš©í•˜ë©´ ì•ˆ ë˜ëŠ” ì„±ë¶„:\n"
+        f"- í¬í•¨ëœ ëŒ€í‘œ ì œí’ˆ:\n"
+        f"- ì‚¬ìš© ì‹œê¸°/ê³„ì ˆ:\n\n"
+        f"â€» ìœ„ í•­ëª©ì€ ë°˜ë“œì‹œ ëª¨ë‘ í¬í•¨í•˜ë©°, ê° í•­ëª©ì˜ ì œëª©ê³¼ í˜•ì‹ì„ ê·¸ëŒ€ë¡œ ìœ ì§€í•´ì£¼ì„¸ìš”.\n"
+        f"â€» ì•„ë˜ í‘œí˜„ì€ ì ˆëŒ€ ì‚¬ìš©í•˜ì§€ ë§ˆì„¸ìš”: 'ì¹˜ë£Œ', 'ê°œì„ ', 'ì§ˆë³‘ëª…', 'ê°€ì¥ ì¢‹ë‹¤', 'íƒì›”í•˜ë‹¤', 'ë¹„êµ'\n"
+    )
 
-- È¿°ú:
-- ºÎÀÛ¿ë:
-- ÁÖÀÇ»çÇ×:
-- ÀûÇÕÇÑ ÇÇºÎ Å¸ÀÔ:
-- ±ÇÀå ³óµµ:
-- ÇÔ²² »ç¿ëÇÏ¸é ¾È µÇ´Â ¼ººĞ:
-- Æ÷ÇÔµÈ ´ëÇ¥ Á¦Ç°:
-- »ç¿ë ½Ã±â/°èÀı:
-"""
-    output = pipe(prompt, max_new_tokens=300, do_sample=True, top_k=50, top_p=0.95)[0]['generated_text']
-    return output.replace(prompt.strip(), "").strip()
+    try:
+        response = model.generate_content(prompt)
+        content = response.text.strip()
 
-# °á°ú ÀúÀå
+        # ê²€ì¦
+        if all(field in content for field in required_fields):
+            return content
+        else:
+            return "[í˜•ì‹ ì˜¤ë¥˜] ì¼ë¶€ í•­ëª©ì´ ëˆ„ë½ë˜ì—ˆê±°ë‚˜ ì˜ëª»ëœ í˜•ì‹ì…ë‹ˆë‹¤.\n\n" + content
+    except Exception as e:
+        return f"[ERROR] {str(e)}"
+
+# 5. ì„±ë¶„ë³„ ì„¤ëª… ìƒì„± ë° ê²°ê³¼ ì €ì¥
 results = []
-for ingredient in ingredient_list:
-    print(f"Generating info for: {ingredient}")
+for i, ingredient in enumerate(ingredient_list):
+    print(f"[{i+1}/{len(ingredient_list)}] Generating info for: {ingredient}")
     description = generate_description(ingredient)
     results.append({
-        "¼ººĞ¸í": ingredient,
-        "¼³¸í": description
+        "ì„±ë¶„ëª…": ingredient,
+        "ì„¤ëª…": description
     })
-    time.sleep(1)  # ¸ğµ¨ ÀÀ´ä µô·¹ÀÌ ´ëÀÀ
+    time.sleep(1.5)  # Gemini API ê³¼ë„í•œ í˜¸ì¶œ ë°©ì§€
 
-# µ¥ÀÌÅÍÇÁ·¹ÀÓÀ¸·Î Á¤¸®
-df = pd.DataFrame(results)
-df.to_csv("È¿°úDB_¼ººĞ¼³¸í.csv", index=False, encoding="utf-8-sig")
-print("È¿°ú DB ÀúÀå ¿Ï·á: È¿°úDB_¼ººĞ¼³¸í.csv")
+# 6. CSV ë° SQLite ì €ì¥
+result_df = pd.DataFrame(results)
+result_df.to_csv("íš¨ê³¼DB_ì„±ë¶„ì„¤ëª…_gemini.csv", index=False, encoding="utf-8-sig")
 
-# CSV ·Îµå
-df = pd.read_csv("È¿°úDB_¼ººĞ¼³¸í.csv")
-
-# SQLite ¿¬°á ¹× ÀúÀå
 conn = sqlite3.connect("skincare_ingredient.db")
-df.to_sql("ingredient_descriptions", conn, if_exists="replace", index=False)
-
-print("SQLite DB¿¡ ÀúÀå ¿Ï·á")
+result_df.to_sql("ingredient_descriptions", conn, if_exists="replace", index=False)
 conn.close()
+
+print("âœ… Gemini ê¸°ë°˜ CSV ë° SQLite DB ì €ì¥ ì™„ë£Œ")
