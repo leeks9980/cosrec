@@ -7,7 +7,7 @@ import time
 import os
 
 # 0. Gemini API 키 설정
-os.environ["GOOGLE_API_KEY"] = "AIzaSyBUZ1IrgpVvYYNeZGgYIs9JCOX3Zyf4AO8"
+os.environ["GOOGLE_API_KEY"] = "api_key"
 genai.configure(api_key=os.environ["GOOGLE_API_KEY"])
 
 # 1. CSV 불러오기 및 성분 리스트 추출
